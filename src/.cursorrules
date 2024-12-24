@@ -1,0 +1,119 @@
+<context>
+    Your a ai  embedding in web development you use theses frameworks and languages :
+    - Typescript
+    - Node.js with Next.js
+    - Tailwind CSS
+    - React
+    - Next.js
+    - Prisma
+    - PostgreSQL
+    - ShadcnUI
+    - Vercel
+    - BetterAuth
+</context>
+
+<style-and-structure>
+    - Write consise , terminal and reusable Typescript code using functional and declarative design patterns 
+    - Avoid classes,  prefer iteration and modular code over duplication 
+    - Use descriptive variable names and function names with auxiliary verbs (e.g., 'isLoading', 'isLoggedIn' , "hasError")
+    - Structure file into : exported components , subcomponents , helpers , static contents and types.
+</style-and-structure>
+
+<naming-conventions>
+    - Use lowercase with dashes for directories (e.g., 'components/auth-wizard')
+    - Favor named exports for components 
+</naming-conventions>
+
+<typescript-usages>
+    - Use Typescript for all codes , prefer types over interfaces 
+    - Avoid enums , use types insetead
+    - Use fonctional components with Typescript types.
+</typescript-usages>
+
+<syntax-and-formating>
+    - Avoid unecessary curly braces in conditionals , use concise syntax for simple statements
+    - Write declarative JSX
+</syntax-and-formating>
+
+<ui-and-styling>
+    - Use shadcn ui , Radix , and tailwind for components and styling
+    - Implement responsive design with Tailwind CSS using mobile first approach
+</ui-and-styling>
+
+<performance-and-optimization>
+    - Optimize components for performance , use useCallback , useMemo , useEffect hooks
+    - Minimize re-renders by using memoization and context providers
+    - Use server actions for data fetching and mutations
+</performance-and-optimization>
+
+<data-querying-and-data-model-creation>
+    - Use Prisma for data querying and data model creation SDK
+    - For data models , read the '.prisma' files
+
+<key-conventions>
+    - Use 'nugs' for URL search parameters state management
+    - Optimize web vital (LCP , CLS , FID)
+    - Limit 'use client' : Favor server components and Next.JS SSR for data fetching or state management
+    - Use 'use client' only for Web API access in small components
+</key-conventions>
+
+<postgres>
+    - Use valid Postgres syntax with guillemet for table column names
+</postgres>
+
+<next-js-and-react-19>
+    - Utilize React 19 with Server components. Implement Prisma queries and backend logic inside `page`, `layout` file like this :
+    ```tsx
+    export default function Page(){
+        const data = await prisma.table.findMany();
+        return <div>{data.map((item) => <p>{item.column}</p>)}</div>;
+    }
+    ```
+
+    - Avoid using react hooks in server components
+
+</next-js-and-react-19>
+
+<creating-and-components>
+    - You always use `export function` without `export default` for components
+    - You always use an object "props" as the first argument of your component , and add type directly in object.
+
+    Exemple : 
+    ```tsx
+    export function MyComponent(props: {name: string}){
+        return <div>{props.name}</div>;
+    }
+    ```
+</creating-and-components>
+
+<toast-exemple>
+    - You use toast from react-hot-toast library to display toast messages e.g : 
+    ```tsx
+
+    import toast, { Toaster } from 'react-hot-toast';
+
+    const notify = () => toast('Here is your toast.');
+
+    const App = () => {
+    return (
+        <div>
+        <button onClick={notify}>Make me a toast</button>
+        <Toaster />
+        </div>
+    );
+    };
+    ```
+
+</toast-exemple>
+
+
+<form-exemple>
+    - If you use form , you zod for validation with schema.
+    
+</form-exemple>
+
+
+
+
+
+

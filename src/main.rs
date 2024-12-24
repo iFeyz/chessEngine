@@ -1,4 +1,5 @@
-use std::{ascii::AsciiExt, usize};
+use bitflags::bitflags;
+use std::collections::VecDeque;
 
 type PlacePosition = u64;
 
@@ -59,9 +60,27 @@ enum Square {
     Occupied(usize)
 }
 
+bitflags! {
+    struct CasthlingRights : u8 {
+        const NONE = 0;
+        const WHITEKINGSIDE = 1 << 0;
+        const WHITEQUEENSIDE = 1 << 1;
+        const BLACKKINGSIDE = 1 << 2;
+        const BLACKQUEENSIDE = 1 << 3;
+        const ALL = Self::WHITEKINGSIDE.bits | Self::WHITEQUEENSIDE.bits | Self::BLACKKINGSIDE.bits | Self::BLACKQUEENSIDE.bits;
+    }
+}
+
+
+
 struct Game {
     pieces : Vec<Piece>,
     squares: Vec<Square>,
+    active_color: Color,
+    castling_rights: CasthlingRights,
+    en_passant: Option<PlacePosition>,
+    halfmove_clock: usize,
+    fullmove_number: usize,
 }
 
 impl Game {
@@ -78,7 +97,7 @@ impl Game {
 
     fn initialize() -> Game {
         let mut game = Game {
-            pieces : vec![] , squares : vec![]
+            pieces : vec![] , squares : vec![] , active_color : Color::White , castling_rights : CasthlingRights::ALL , en_passant : None, halfmove_clock : 0 , fullmove_number : 1
         };
         let mut piece_index = 0;
         let color = Color::White;
@@ -139,7 +158,122 @@ impl Game {
         board.insert_str(0, &temp);
         board
     }
+#[allow(non_snake_case)]
+fn read_FEN(fen : &str) -> Game {
+    let mut game = Game {
+        pieces : vec![],
+        squares: vec![],
+        active_color : Color::White,
+        castling_rights: CasthlingRights::ALL,
+        en_passant : None,
+        halfmove_clock : 0,
+        fullmove_number : 1
+    };
+
+    let (position , rest) = split_on(fen , ' ');
+
+    let mut deque_squares = VecDeque::new();
+    let mut piece_index = 0;
+    let mut piece_position = 64;
+
+    for row in position.splitn(8 , |ch| ch == '/') {
+        piece_position -= 8;
+        let (pieces , squares) =parse_row(&row , piece_index , piece_position);
+
+        for p in pieces {
+            game.pieces.push(p);
+            piece_index += 1;
+        }
+
+        for s in squares {
+            deque_squares.push_front(s);
+        }
+    }
+
+    game.squares = Vec::from(deque_squares);
+
+    let (color_to_move , rest) = split_on(rest , ' ');
+    game.active_color = match color_to_move {
+        "w" => Color::White,
+        "b" => Color::Black,
+        _ => panic!("Invalid color to move {}", color_to_move)
+    };
+
+    let (castling_rights , rest) = split_on(rest , ' ');
+    game.castling_rights = match castling_rights {
+        "K" => CasthlingRights::WHITEKINGSIDE,
+        "Q" => CasthlingRights::WHITEQUEENSIDE,
+        "k" => CasthlingRights::BLACKKINGSIDE,
+        "q" => CasthlingRights::BLACKQUEENSIDE,
+        _ => CasthlingRights::NONE
+    };
+
+    let (en_passant , rest) = split_on(rest , ' ');
+    game.en_passant = match en_passant {
+        "-" => game.en_passant = None,
+        s => match position_to_bit(s) {
+            Err(msg) => panic!("{}",msg),
+            Ok(bit) => game.en_passant = Some(bit)
+        }
+    };
+
+    game
 }
+
+}
+
+fn parse_row(row : &str , mut piece_index : usize , mut piece_position : usize) -> (Vec<Piece> , Vec<Square>) {
+    let mut pieces = Vec::new();
+    let mut squares = VecDeque::new();
+    
+    let mut color;
+
+    macro_rules! add_piece {
+        ($piece_type : ident) => {{
+            let piece = Piece { color : color , position : (1 as u64) << piece_position , piece_type : PieceType::$piece_type };
+            let square = Square::Occupied(piece_index);
+            pieces.push(piece);
+            squares.push_front(square);
+            piece_index += 1;
+            piece_position += 1;
+        }}
+    }
+    
+    for ch in row.chars() {
+        let is_upper = ch.is_ascii_uppercase();
+        color = if is_upper {Color::White} else {Color::Black};
+        match ch.to_ascii_lowercase() {
+            'r' => add_piece!(Rook),
+            'n' => add_piece!(Knight),
+            'b' => add_piece!(Bishop),
+            'q' => add_piece!(Queen),
+            'k' => add_piece!(King),
+            'p' => add_piece!(Pawn),
+            num => {
+                match num.to_digit(10) {
+                    None => panic!("Invalid input {}",num),
+                    Some(number) => for i in 0..number {
+                        squares.push_front(Square::Empty);
+                        piece_position += 1;
+                    }
+                }
+            }
+
+        }
+    }
+    (pieces , squares.into())
+}
+
+fn split_on(s : &str , sep: char) -> (&str , &str) {
+    for(i , item) in s.chars().enumerate() {
+        if item == sep {
+            return (&s[0..i], &s[i+1..]);
+        }
+    }
+
+    (&s[..],"")
+}
+
 
 impl Piece {
     fn to_string(&self) -> String {
@@ -166,8 +300,12 @@ fn bit_scan(bit: u64) -> usize {
 }
 
 fn main() {
-    let game = Game::initialize();
-
+    let fen_str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let game = Game::read_FEN(fen_str);
+ 
+    let (first_row , rest) = split_on(fen_str, '/');
     println!("{}", game.to_string());
+    //println!("First: {} , second : {}", first_row , rest);
+    //println!("{}", game.to_string());
 }
 
