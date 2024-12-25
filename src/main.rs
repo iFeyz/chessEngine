@@ -3,14 +3,43 @@ use std::collections::VecDeque;
 
 type PlacePosition = u64;
 
-//fn bit_to_position(bit : PlacePosition) -> Result<String, String> {
-//    if bit == 0 {
-//        return Err("No place present".to_string());
-//    } else {
-//        let onebit_index = bit_scan(bit);
-//        return Ok(index_to_position(onebit_index));
-//    }
-//}
+fn bit_to_position(bit : PlacePosition) -> Result<String, String> {
+    if bit == 0 {
+        return Err("No place present".to_string());
+    } else {
+        let onebit_index = bit_scan(bit);
+        return Ok(index_to_position(onebit_index));
+    }
+}
+
+fn position_to_bit(position : &str) -> Result<PlacePosition, String>{
+    if position.len() != 2 {
+        return Err(format!("Invalid position lenght : {} , string {}", position.len(), position));
+    }
+    let bytes = position.as_bytes();
+    let bytes0 = bytes[0];
+    let bytes1 = bytes[1];
+    if bytes0 < 97 || bytes0 >=  94 + 8 {
+        return Err(format!("Invalid column character : {}, string {}", bytes0 as char, position));
+    }
+    let column = (bytes0 - 97) as u32;
+    let bytes1 = bytes[1];
+    let row;
+
+    match (bytes1 as char).to_digit(10) {
+        Some(number) => if(number <1 || number > 8) {
+            return Err(format!("Invalid row number : {}, string {}", number, position));
+        } else {
+            row = number - 1;
+        }
+        None => return Err(format!("Invalid row number : {}, string {}", bytes1 as char, position))
+    }
+
+   let square_number = row * 8 + column;
+   let bit = (1 as u64) << square_number;
+   Ok(bit)
+}
+
 
 static COL_MAP : [char; 8] = ['a' , 'b' ,'c' , 'd' , 'e' , 'f' , 'g' , 'h'];
 
@@ -209,13 +238,25 @@ fn read_FEN(fen : &str) -> Game {
     };
 
     let (en_passant , rest) = split_on(rest , ' ');
-    game.en_passant = match en_passant {
+    match en_passant {
         "-" => game.en_passant = None,
         s => match position_to_bit(s) {
             Err(msg) => panic!("{}",msg),
             Ok(bit) => game.en_passant = Some(bit)
         }
     };
+
+    let(halfmove_clock , rest) = split_on(rest , ' ');
+    match(halfmove_clock.parse()){
+        Ok(number) => game.halfmove_clock = number,
+        Err(_) => panic!("Invalid halfmove : {}", halfmove_clock)
+    }
+
+    let(fullmove_number , _) = split_on(rest , ' ');
+    match(fullmove_number.parse()){
+        Ok(number) => game.fullmove_number = number,
+        Err(_) => panic!("Invalid fullmove : {}", fullmove_number)
+    }
 
     game
 }
@@ -305,6 +346,11 @@ fn main() {
  
     let (first_row , rest) = split_on(fen_str, '/');
     println!("{}", game.to_string());
+    println!("{:?}", game.active_color);
+    println!("{:?}", game.en_passant);
+    println!("{:?}", game.castling_rights);
+    println!("{:?}", game.fullmove_number);
+
     //println!("First: {} , second : {}", first_row , rest);
     //println!("{}", game.to_string());
 }
